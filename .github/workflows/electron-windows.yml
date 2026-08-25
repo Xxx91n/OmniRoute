@@ -39,7 +39,13 @@ jobs:
 
       - name: Install Electron dependencies
         working-directory: electron
-        run: npm ci --no-audit --no-fund
+        # electron/package-lock.json on release/v3.8.50 is out of sync with
+        # package.json (missing electron-builder's Windows optional deps such as
+        # electron-builder-squirrel-windows / electron-winstaller /
+        # @electron/windows-sign), so `npm ci` fails with EUSAGE.
+        # `npm install` reconciles the lock in-memory; versions stay pinned
+        # by the parent dependency specs.
+        run: npm install --no-audit --no-fund
 
       - name: Build Electron for Windows
         working-directory: electron
