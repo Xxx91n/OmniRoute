@@ -47,6 +47,18 @@ jobs:
         # by the parent dependency specs.
         run: npm install --no-audit --no-fund
 
+      - name: Patch electron-builder files config
+        working-directory: electron
+        # Upstream packaging bug: #9984 added electron/lib/loginHeaderCapture.js
+        # and a require() of it in loginManager.js without adding it to the
+        # electron-builder "files" allowlist, so packaged builds crash at
+        # startup with "Cannot find module './lib/loginHeaderCapture'".
+        # Pack the whole lib/ directory (all eight entries are runtime
+        # modules). Idempotent: no-op once the branch carries a fixed
+        # package.json.
+        run: >-
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));const cfg=p.build||p;if(!Array.isArray(cfg.files))throw new Error('electron-builder files array not found');if(!cfg.files.includes('lib/**')){cfg.files.push('lib/**');fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');}console.log('electron-builder files:',cfg.files.join(', '));"
+
       - name: Build Electron for Windows
         working-directory: electron
         env:
